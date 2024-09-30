@@ -1,34 +1,48 @@
-pub enum Node {
+pub type Program = Module;
+
+#[derive(Clone, PartialEq)]
+pub struct Module {
+    pub statements: Vec<Statement>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum Statement {
+    Expression(Expression),
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum Expression {
     Constant {
         value: i64,
     },
     UnaryOp {
         operator: Operator,
-        operand: Box<Node>,
+        operand: Box<Expression>,
     },
     BinaryOp {
-        left: Box<Node>,
+        left: Box<Expression>,
         operator: Operator,
-        right: Box<Node>,
+        right: Box<Expression>,
     },
     Call {
         name: String,
-        args: Vec<Node>,
+        args: Vec<Expression>,
     },
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub enum Operator {
     Sub,
     Add,
 }
 
-impl Node {
+impl Expression {
     pub fn is_leaf(&self) -> bool {
         match self {
-            Node::Constant { .. } => true,
-            Node::UnaryOp { .. } => false,
-            Node::BinaryOp { .. } => false,
-            Node::Call { .. } => true,
+            Expression::Constant { .. } => true,
+            Expression::UnaryOp { .. } => false,
+            Expression::BinaryOp { .. } => false,
+            Expression::Call { .. } => true,
         }
     }
 }
