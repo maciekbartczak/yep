@@ -23,8 +23,13 @@ impl PartialEvaluator {
     fn evaluate_statement(&self, statment: Statement) -> Statement {
         match statment {
             Statement::Expression(expression) => {
-                Statement::Expression(self.evaluate_expression(expression.clone()))
+                Statement::Expression(self.evaluate_expression(expression))
             }
+            Statement::VariableDeclaration { name, value } => Statement::VariableDeclaration {
+                name: name,
+                value: self.evaluate_expression(value),
+            },
+            _ => statment,
         }
     }
 
@@ -175,12 +180,43 @@ mod tests {
     }
 
     #[test]
+    fn evaluate_constant_assignment_to_variable() {
+        // given
+        let program = Program {
+            statements: vec![Statement::VariableDeclaration {
+                name: "foo".to_string(),
+                value: Expression::BinaryOp {
+                    left: Box::new(Expression::Constant { value: 8 }),
+                    operator: Operator::Sub,
+                    right: Box::new(Expression::Constant { value: 3 }),
+                },
+            }],
+        };
+
+        let evaluator = PartialEvaluator::new(program);
+
+        // when
+        let result = evaluator.evaluate();
+
+        // then
+        assert_eq!(
+            result.statements,
+            vec![Statement::VariableDeclaration {
+                name: "foo".to_string(),
+                value: Expression::Constant { value: 5 }
+            }]
+        );
+    }
+
+    #[test]
     fn do_not_evalute_when_there_is_runtime_expressions() {
         // given
-        // 8 - (-(3 + 1) + get_value()) = ???
+        // x - (-(3 + 1) + get_value()) = ???
         let program = Program {
             statements: vec![Statement::Expression(Expression::BinaryOp {
-                left: Box::new(Expression::Constant { value: 8 }),
+                left: Box::new(Expression::VariableAccess {
+                    name: "x".to_string(),
+                }),
                 operator: Operator::Sub,
                 right: Box::new(Expression::BinaryOp {
                     left: Box::new(Expression::UnaryOp {

@@ -8,6 +8,7 @@ pub struct Module {
 #[derive(Clone, PartialEq, Debug)]
 pub enum Statement {
     Expression(Expression),
+    VariableDeclaration { name: String, value: Expression },
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -28,6 +29,9 @@ pub enum Expression {
         name: String,
         args: Vec<Expression>,
     },
+    VariableAccess {
+        name: String,
+    },
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -40,9 +44,8 @@ impl Expression {
     pub fn is_leaf(&self) -> bool {
         match self {
             Expression::Constant { .. } => true,
-            Expression::UnaryOp { .. } => false,
-            Expression::BinaryOp { .. } => false,
             Expression::Call { .. } => true,
+            _ => false,
         }
     }
 }
