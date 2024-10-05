@@ -2,6 +2,7 @@ use ast::{Expression, Operator};
 
 mod ast;
 mod partial_evaluator;
+mod remove_complex_operands;
 
 fn main() {
     let not_eight = Expression::UnaryOp {
