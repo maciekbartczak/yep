@@ -75,12 +75,20 @@ impl RemoveComplexOperandsPass {
             Expression::UnaryOp { operator, operand } => {
                 let operand = self.transform_expression(*operand);
 
-                return TransformExpressionResult {
-                    expression: Expression::UnaryOp {
+                let (temp_variable_name, temp_variable_statement) = self
+                    .declare_temporary_variable(Expression::UnaryOp {
                         operator,
                         operand: Box::new(operand.expression),
+                    });
+
+                let mut additional_statements = operand.additional_statements;
+                additional_statements.push(temp_variable_statement);
+
+                return TransformExpressionResult {
+                    expression: Expression::VariableAccess {
+                        name: temp_variable_name,
                     },
-                    additional_statements: operand.additional_statements,
+                    additional_statements,
                 };
             }
             Expression::BinaryOp {
@@ -97,13 +105,21 @@ impl RemoveComplexOperandsPass {
                     right: Box::new(right.expression),
                 };
 
+                let (temp_variable_name, temp_variable_statement) =
+                    self.declare_temporary_variable(new_expression);
+
+                let mut additional_statements: Vec<Statement> = left
+                    .additional_statements
+                    .into_iter()
+                    .chain(right.additional_statements.into_iter())
+                    .collect();
+                additional_statements.push(temp_variable_statement);
+
                 return TransformExpressionResult {
-                    expression: new_expression,
-                    additional_statements: left
-                        .additional_statements
-                        .into_iter()
-                        .chain(right.additional_statements.into_iter())
-                        .collect(),
+                    expression: Expression::VariableAccess {
+                        name: temp_variable_name,
+                    },
+                    additional_statements,
                 };
             }
             Expression::Call { name, args } => {
@@ -121,21 +137,16 @@ impl RemoveComplexOperandsPass {
                     .flat_map(|arg| arg.additional_statements)
                     .collect();
 
-                let temp_variable_name = format!("tmp_{}", self.temp_variable_index).to_string();
-                self.temp_variable_index += 1;
-
-                let create_temp_variable_statement = Statement::VariableDeclaration {
-                    name: temp_variable_name.clone(),
-                    value: Expression::Call {
-                        name,
+                let (temp_variable_name, temp_variable_statement) = self
+                    .declare_temporary_variable(Expression::Call {
+                        name: name,
                         args: new_args,
-                    },
-                };
+                    });
                 let new_expression = Expression::VariableAccess {
                     name: temp_variable_name,
                 };
 
-                additional_statements.push(create_temp_variable_statement);
+                additional_statements.push(temp_variable_statement);
                 return TransformExpressionResult {
                     expression: new_expression,
                     additional_statements,
@@ -143,8 +154,24 @@ impl RemoveComplexOperandsPass {
             }
         }
     }
+
+    fn declare_temporary_variable(
+        &mut self,
+        initialzer_expression: Expression,
+    ) -> (String, Statement) {
+        let temp_variable_name = format!("tmp_{}", self.temp_variable_index).to_string();
+        self.temp_variable_index += 1;
+
+        let statement = Statement::VariableDeclaration {
+            name: temp_variable_name.clone(),
+            value: initialzer_expression,
+        };
+
+        return (temp_variable_name, statement);
+    }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::Operator;
@@ -210,6 +237,7 @@ mod test {
                 },
                 Statement::VariableDeclaration {
                     name: "test".to_string(),
+                    // TODO: fix the test - this is not an atomic expression
                     value: Expression::BinaryOp {
                         left: Box::new(Expression::BinaryOp {
                             left: Box::new(Expression::VariableAccess {
@@ -222,6 +250,91 @@ mod test {
                         }),
                         operator: Operator::Sub,
                         right: Box::new(Expression::Constant { value: 3 }),
+                    },
+                }
+            ]
+        )
+    }
+
+    #[test]
+    fn test() {
+        // given
+        let program = Program {
+            statements: vec![Statement::VariableDeclaration {
+                name: "test".to_string(),
+                value: Expression::BinaryOp {
+                    left: Box::new(Expression::BinaryOp {
+                        left: Box::new(Expression::Constant { value: 3 }),
+                        operator: Operator::Add,
+                        right: Box::new(Expression::UnaryOp {
+                            operator: Operator::Sub,
+                            operand: Box::new(Expression::Constant { value: 4 }),
+                        }),
+                    }),
+                    operator: Operator::Sub,
+                    right: Box::new(Expression::UnaryOp {
+                        operator: Operator::Sub,
+                        operand: Box::new(Expression::Call {
+                            name: "get_number".to_string(),
+                            args: vec![],
+                        }),
+                    }),
+                },
+            }],
+        };
+
+        let pass = RemoveComplexOperandsPass::new(program);
+
+        // when
+        let result = pass.run();
+
+        // then
+        assert_eq!(
+            result.statements,
+            vec![
+                Statement::VariableDeclaration {
+                    name: "tmp_0".to_string(),
+                    value: Expression::UnaryOp {
+                        operator: Operator::Sub,
+                        operand: Box::new(Expression::Constant { value: 4 }),
+                    },
+                },
+                Statement::VariableDeclaration {
+                    name: "tmp_1".to_string(),
+                    value: Expression::BinaryOp {
+                        left: Box::new(Expression::Constant { value: 3 }),
+                        operator: Operator::Add,
+                        right: Box::new(Expression::VariableAccess {
+                            name: "tmp_0".to_string()
+                        })
+                    },
+                },
+                Statement::VariableDeclaration {
+                    name: "tmp_2".to_string(),
+                    value: Expression::Call {
+                        name: "get_number".to_string(),
+                        args: vec![],
+                    },
+                },
+                Statement::VariableDeclaration {
+                    name: "tmp_3".to_string(),
+                    value: Expression::UnaryOp {
+                        operator: Operator::Sub,
+                        operand: Box::new(Expression::VariableAccess {
+                            name: "tmp_2".to_string()
+                        }),
+                    },
+                },
+                Statement::VariableDeclaration {
+                    name: "test".to_string(),
+                    value: Expression::BinaryOp {
+                        left: Box::new(Expression::VariableAccess {
+                            name: "tmp_1".to_string()
+                        }),
+                        operator: Operator::Sub,
+                        right: Box::new(Expression::VariableAccess {
+                            name: "tmp_3".to_string()
+                        }),
                     },
                 }
             ]
