@@ -29,7 +29,6 @@ impl PartialEvaluator {
                 name: name,
                 value: self.evaluate_expression(value),
             },
-            _ => statment,
         }
     }
 

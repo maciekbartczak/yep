@@ -48,12 +48,12 @@ impl RemoveComplexOperandsPass {
 
     fn transform_statement(&mut self, statement: Statement) -> Vec<Statement> {
         match statement {
-            Statement::Expression(expression) => todo!(),
+            Statement::Expression(_expression) => todo!(),
             Statement::VariableDeclaration {
                 name,
                 value: initializer_expression,
             } => {
-                let result = self.transform_expression(initializer_expression);
+                let result = self.transform_expression(initializer_expression, false);
 
                 let new_statement = Statement::VariableDeclaration {
                     name,
@@ -68,12 +68,27 @@ impl RemoveComplexOperandsPass {
         }
     }
 
-    fn transform_expression(&mut self, expression: Expression) -> TransformExpressionResult {
+    fn transform_expression(
+        &mut self,
+        expression: Expression,
+        should_create_temporary_variable: bool,
+    ) -> TransformExpressionResult {
         match expression {
             Expression::Constant { .. } => expression.into(),
             Expression::VariableAccess { .. } => expression.into(),
             Expression::UnaryOp { operator, operand } => {
-                let operand = self.transform_expression(*operand);
+                let operand = self.transform_expression(*operand, true);
+                let mut additional_statements = operand.additional_statements;
+
+                if !should_create_temporary_variable {
+                    return TransformExpressionResult {
+                        expression: Expression::UnaryOp {
+                            operator,
+                            operand: Box::new(operand.expression),
+                        },
+                        additional_statements,
+                    };
+                }
 
                 let (temp_variable_name, temp_variable_statement) = self
                     .declare_temporary_variable(Expression::UnaryOp {
@@ -81,7 +96,6 @@ impl RemoveComplexOperandsPass {
                         operand: Box::new(operand.expression),
                     });
 
-                let mut additional_statements = operand.additional_statements;
                 additional_statements.push(temp_variable_statement);
 
                 return TransformExpressionResult {
@@ -96,23 +110,29 @@ impl RemoveComplexOperandsPass {
                 operator,
                 right,
             } => {
-                let left = self.transform_expression(*left);
-                let right = self.transform_expression(*right);
+                let left = self.transform_expression(*left, true);
+                let right = self.transform_expression(*right, true);
 
                 let new_expression = Expression::BinaryOp {
-                    left: Box::new(left.expression),
+                    left: Box::new(left.expression.clone()),
                     operator,
-                    right: Box::new(right.expression),
+                    right: Box::new(right.expression.clone()),
                 };
-
-                let (temp_variable_name, temp_variable_statement) =
-                    self.declare_temporary_variable(new_expression);
-
                 let mut additional_statements: Vec<Statement> = left
                     .additional_statements
                     .into_iter()
                     .chain(right.additional_statements.into_iter())
                     .collect();
+
+                if !should_create_temporary_variable {
+                    return TransformExpressionResult {
+                        expression: new_expression,
+                        additional_statements,
+                    };
+                }
+
+                let (temp_variable_name, temp_variable_statement) =
+                    self.declare_temporary_variable(new_expression);
                 additional_statements.push(temp_variable_statement);
 
                 return TransformExpressionResult {
@@ -125,7 +145,7 @@ impl RemoveComplexOperandsPass {
             Expression::Call { name, args } => {
                 let transformed_args: Vec<TransformExpressionResult> = args
                     .iter()
-                    .map(|arg| self.transform_expression(arg.clone()))
+                    .map(|arg| self.transform_expression(arg.clone(), true))
                     .collect();
 
                 let new_args: Vec<Expression> = transformed_args
@@ -139,7 +159,7 @@ impl RemoveComplexOperandsPass {
 
                 let (temp_variable_name, temp_variable_statement) = self
                     .declare_temporary_variable(Expression::Call {
-                        name: name,
+                        name,
                         args: new_args,
                     });
                 let new_expression = Expression::VariableAccess {
@@ -175,6 +195,7 @@ impl RemoveComplexOperandsPass {
 mod test {
     use super::*;
     use crate::Operator;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn transform_method_call_into_variable_access() {
@@ -236,17 +257,22 @@ mod test {
                     },
                 },
                 Statement::VariableDeclaration {
-                    name: "test".to_string(),
-                    // TODO: fix the test - this is not an atomic expression
+                    name: "tmp_3".to_string(),
                     value: Expression::BinaryOp {
-                        left: Box::new(Expression::BinaryOp {
-                            left: Box::new(Expression::VariableAccess {
-                                name: "tmp_0".to_string()
-                            }),
-                            operator: Operator::Add,
-                            right: Box::new(Expression::VariableAccess {
-                                name: "tmp_2".to_string()
-                            })
+                        left: Box::new(Expression::VariableAccess {
+                            name: "tmp_0".to_string()
+                        }),
+                        operator: Operator::Add,
+                        right: Box::new(Expression::VariableAccess {
+                            name: "tmp_2".to_string()
+                        })
+                    },
+                },
+                Statement::VariableDeclaration {
+                    name: "test".to_string(),
+                    value: Expression::BinaryOp {
+                        left: Box::new(Expression::VariableAccess {
+                            name: "tmp_3".to_string()
                         }),
                         operator: Operator::Sub,
                         right: Box::new(Expression::Constant { value: 3 }),
