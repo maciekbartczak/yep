@@ -1,6 +1,7 @@
 use ast::{Expression, Operator};
 
 mod ast;
+mod codegen;
 mod partial_evaluator;
 mod remove_complex_operands;
 
