@@ -7,6 +7,7 @@ mod ast;
 mod codegen;
 mod partial_evaluator;
 mod remove_complex_operands;
+mod tokenizer;
 
 fn main() {
     let program = Program {
