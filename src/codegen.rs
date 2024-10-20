@@ -48,9 +48,9 @@ impl X86AssemblyCodegen {
             .iter()
             .flat_map(|statement| self.emit_statement(&statement))
             .collect();
-        let cleanup = self.emit_cleanup();
+        let epilogue = self.emit_epilogue();
 
-        [prelude, program_instructions, cleanup].concat()
+        [prelude, program_instructions, epilogue].concat()
     }
 
     fn emit_prelude(&self) -> Vec<Instruction> {
@@ -62,7 +62,7 @@ impl X86AssemblyCodegen {
         ]
     }
 
-    fn emit_cleanup(&self) -> Vec<Instruction> {
+    fn emit_epilogue(&self) -> Vec<Instruction> {
         vec!["xor rax, rax".to_string(), "ret".to_string()]
     }
 
@@ -156,11 +156,18 @@ mod test {
         let result = codegen.generate();
 
         // then
+
         assert_eq!(
             vec![
+                "global main",
+                "extern print_int",
+                "section .text",
+                "main:",
                 "mov qword [rbp - 8], 4",
                 "mov qword [rbp - 16], 42",
-                "mov qword [rbp - 24], 127"
+                "mov qword [rbp - 24], 127",
+                "xor rax, rax",
+                "ret"
             ],
             result
         )
@@ -182,6 +189,18 @@ mod test {
         let result = codegen.generate();
 
         // then
-        assert_eq!(vec!["mov qword rdi, 4", "call print_int",], result)
+        assert_eq!(
+            vec![
+                "global main",
+                "extern print_int",
+                "section .text",
+                "main:",
+                "mov qword rdi, 4",
+                "call print_int",
+                "xor rax, rax",
+                "ret"
+            ],
+            result
+        )
     }
 }
