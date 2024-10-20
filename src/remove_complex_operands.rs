@@ -193,8 +193,9 @@ impl RemoveComplexOperandsPass {
 
 #[cfg(test)]
 mod test {
+    use crate::ast::Operator;
+
     use super::*;
-    use crate::Operator;
     use pretty_assertions::assert_eq;
 
     #[test]
