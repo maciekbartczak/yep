@@ -105,7 +105,7 @@ impl Tokenizer {
             }
 
             c = self.consume_char();
-            self.current_token_start = self.cursor;
+            self.current_token_start = self.cursor - 1;
         }
 
         let token = match c {
@@ -207,10 +207,9 @@ impl Tokenizer {
             );
         }
 
+        // start  + 1, because token start points at the opening quote
         // cursor - 1, because cursor points at the closing quote
-        // because the source is a plain string it is 0 indexed, howevers because the first quote
-        // needs to be skipped there is no need to subtract 1 from current_token_start
-        let raw_value = &self.source[self.current_token_start..self.cursor - 1];
+        let raw_value = &self.source[self.current_token_start + 1..self.cursor - 1];
         Token {
             r#type: TokenType::String,
             location: (self.current_line, self.current_token_start),
@@ -257,11 +256,7 @@ impl Tokenizer {
         }
 
         let length = self.cursor - self.current_token_start;
-        let token_start = if self.current_token_start == 0 {
-            0
-        } else {
-            self.current_token_start - 1
-        };
+        let token_start = self.current_token_start;
         let raw_value = &self.source[token_start..self.cursor];
 
         let token_type = if let Some(keyword) = Keyword::try_match_from_raw_value(raw_value) {
