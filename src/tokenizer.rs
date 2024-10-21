@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq)]
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     r#type: TokenType,
     location: (usize, usize),
@@ -6,8 +8,18 @@ pub struct Token {
     literal_value: String,
 }
 
-#[derive(Debug, PartialEq)]
-enum TokenType {
+impl Token {
+    pub fn get_type(&self) -> &TokenType {
+        &self.r#type
+    }
+
+    pub fn get_literal_value(&self) -> &str {
+        &self.literal_value
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TokenType {
     // 1 characer tokens
     ParenthesesLeft,
     ParenthesesRight,
@@ -43,8 +55,14 @@ enum TokenType {
     Eof,
 }
 
-#[derive(Debug, PartialEq)]
-enum Keyword {
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Keyword {
     Let,
     Const,
 }

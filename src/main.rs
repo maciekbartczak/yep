@@ -1,13 +1,15 @@
 use std::fs::File;
 
 use ast::{Expression, Program, Statement};
-use tokenizer::Tokenizer;
+use parser::Parser;
 use std::env;
 use std::fs;
 use std::io::Write;
+use tokenizer::Tokenizer;
 
 mod ast;
 mod codegen;
+mod parser;
 mod partial_evaluator;
 mod remove_complex_operands;
 mod tokenizer;
@@ -23,7 +25,8 @@ fn main() {
     let source = fs::read_to_string(source_path).unwrap();
 
     let tokens = Tokenizer::new(source).tokenize();
-    dbg!(tokens);
+    let program = Parser::new(tokens).parse();
+    dbg!(program);
 
     let program = Program {
         statements: vec![

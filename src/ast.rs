@@ -1,6 +1,6 @@
 pub type Program = Module;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Module {
     pub statements: Vec<Statement>,
 }
