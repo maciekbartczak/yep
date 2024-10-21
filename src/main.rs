@@ -1,6 +1,9 @@
 use std::fs::File;
 
 use ast::{Expression, Program, Statement};
+use tokenizer::Tokenizer;
+use std::env;
+use std::fs;
 use std::io::Write;
 
 mod ast;
@@ -10,6 +13,18 @@ mod remove_complex_operands;
 mod tokenizer;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("Usage: yep <filename>");
+        return;
+    }
+
+    let source_path = &args[1];
+    let source = fs::read_to_string(source_path).unwrap();
+
+    let tokens = Tokenizer::new(source).tokenize();
+    dbg!(tokens);
+
     let program = Program {
         statements: vec![
             Statement::VariableDeclaration {

@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq)]
-struct Token {
+pub struct Token {
     r#type: TokenType,
     location: (usize, usize),
     length: usize,
@@ -59,7 +59,7 @@ impl Keyword {
     }
 }
 
-struct Tokenizer {
+pub struct Tokenizer {
     source: String,
     cursor: usize,
     current_line: usize,
