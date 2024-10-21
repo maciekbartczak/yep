@@ -26,22 +26,7 @@ fn main() {
 
     let tokens = Tokenizer::new(source).tokenize();
     let program = Parser::new(tokens).parse();
-    dbg!(program);
-
-    let program = Program {
-        statements: vec![
-            Statement::VariableDeclaration {
-                name: "foo".to_string(),
-                value: Expression::Constant { value: 123 },
-            },
-            Statement::Expression(Expression::Call {
-                name: "print_int".to_string(),
-                args: vec![Expression::VariableAccess {
-                    name: "foo".to_string(),
-                }],
-            }),
-        ],
-    };
+    dbg!(&program);
 
     let mut codegen = codegen::X86AssemblyCodegen::new(program);
     let instructions = codegen.generate();

@@ -24,7 +24,7 @@ impl Parser {
     }
 
     fn parse_variable_declaration(&mut self) -> Statement {
-        if self.consume_if_matched(vec![TokenType::Keyword(Keyword::Let)]) {
+        if let Some(_) = self.consume_if_matched(vec![TokenType::Keyword(Keyword::Let)]) {
             let identifier = self.consume_required(TokenType::Identifier);
 
             self.consume_required(TokenType::Equals);
@@ -40,6 +40,27 @@ impl Parser {
                     value: number.get_literal_value().parse::<i64>().unwrap(),
                 },
             };
+        }
+
+        self.parse_function_call()
+    }
+
+    fn parse_function_call(&mut self) -> Statement {
+        if let Some(function_identifier) = self.consume_if_matched(vec![TokenType::Identifier]) {
+            self.consume_required(TokenType::ParenthesesLeft);
+
+            // TODO: handle expressions
+            let variable_access = self.consume_required(TokenType::Identifier);
+
+            self.consume_required(TokenType::ParenthesesRight);
+            self.consume_required(TokenType::Semicolon);
+
+            return Statement::Expression(Expression::Call {
+                name: function_identifier.get_literal_value().to_string(),
+                args: vec![Expression::VariableAccess {
+                    name: variable_access.get_literal_value().to_string(),
+                }],
+            });
         }
 
         self.parse_statement()
@@ -68,16 +89,18 @@ impl Parser {
         return current;
     }
 
-    fn consume_if_matched(&mut self, wanted: Vec<TokenType>) -> bool {
-        let current_type = self.tokens[self.cursor].get_type();
+    fn consume_if_matched(&mut self, wanted: Vec<TokenType>) -> Option<Token> {
+        let current = self.tokens[self.cursor].clone();
+        let current_type = current.get_type();
+
         for wanted_type in wanted {
             if wanted_type == *current_type {
                 self.cursor += 1;
-                return true;
+                return Some(current);
             }
         }
 
-        return false;
+        return None;
     }
 
     fn is_at_end(&self) -> bool {

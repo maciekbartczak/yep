@@ -1,2 +1,3 @@
 let a = 123;
-print_int(a);
+let b = 69420;
+print_int(b);
