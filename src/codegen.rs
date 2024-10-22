@@ -59,11 +59,18 @@ impl X86AssemblyCodegen {
             "extern print_int".to_string(),
             "section .text".to_string(),
             "main:".to_string(),
+            "push rbp".to_string(),
+            "mov rbp, rsp".to_string(),
         ]
     }
 
     fn emit_epilogue(&self) -> Vec<Instruction> {
-        vec!["xor rax, rax".to_string(), "ret".to_string()]
+        vec![
+            "mov rsp, rbp".to_string(),
+            "pop rbp".to_string(),
+            "xor rax, rax".to_string(),
+            "ret".to_string(),
+        ]
     }
 
     fn emit_statement(&mut self, statement: &Statement) -> Vec<Instruction> {
@@ -163,9 +170,13 @@ mod test {
                 "extern print_int",
                 "section .text",
                 "main:",
+                "push rbp",
+                "mov rbp, rsp",
                 "mov qword [rbp - 8], 4",
                 "mov qword [rbp - 16], 42",
                 "mov qword [rbp - 24], 127",
+                "mov rsp, rbp",
+                "pop rbp",
                 "xor rax, rax",
                 "ret"
             ],
@@ -195,8 +206,12 @@ mod test {
                 "extern print_int",
                 "section .text",
                 "main:",
+                "push rbp",
+                "mov rbp, rsp",
                 "mov qword rdi, 4",
                 "call print_int",
+                "mov rsp, rbp",
+                "pop rbp",
                 "xor rax, rax",
                 "ret"
             ],
