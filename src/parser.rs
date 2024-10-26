@@ -86,7 +86,7 @@ impl Parser {
 
         self.cursor += 1;
 
-        return current;
+        current
     }
 
     fn consume_if_matched(&mut self, wanted: Vec<TokenType>) -> Option<Token> {
@@ -100,7 +100,7 @@ impl Parser {
             }
         }
 
-        return None;
+        None
     }
 
     fn is_at_end(&self) -> bool {

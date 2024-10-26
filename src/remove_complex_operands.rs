@@ -24,7 +24,7 @@ impl From<Expression> for TransformExpressionResult {
 // for example:
 // BinaryOp { left: Call {name: "get_foo" }, op: Sub, right: Constant (3) }
 // should become:
-// VariableDeclaratin { name: "tmp_0", expression: Call {name: "get_foo" } }
+// VariableDeclaration { name: "tmp_0", expression: Call {name: "get_foo" } }
 // BinaryOp { left: VariableAccess { name: "tmp_0" }, op: Sub, right: Constant (3) }
 impl RemoveComplexOperandsPass {
     pub fn new(program: Program) -> Self {
@@ -35,7 +35,7 @@ impl RemoveComplexOperandsPass {
     }
 
     pub fn run(mut self) -> Program {
-        return Program {
+        Program {
             statements: self
                 .program
                 .statements
@@ -43,7 +43,7 @@ impl RemoveComplexOperandsPass {
                 .iter()
                 .flat_map(|statement| self.transform_statement(statement.clone()))
                 .collect(),
-        };
+        }
     }
 
     fn transform_statement(&mut self, statement: Statement) -> Vec<Statement> {
@@ -63,7 +63,7 @@ impl RemoveComplexOperandsPass {
                 let mut new_statements = result.additional_statements;
                 new_statements.push(new_statement);
 
-                return new_statements;
+                new_statements
             }
         }
     }
@@ -98,12 +98,12 @@ impl RemoveComplexOperandsPass {
 
                 additional_statements.push(temp_variable_statement);
 
-                return TransformExpressionResult {
+                TransformExpressionResult {
                     expression: Expression::VariableAccess {
                         name: temp_variable_name,
                     },
                     additional_statements,
-                };
+                }
             }
             Expression::BinaryOp {
                 left,
@@ -135,12 +135,12 @@ impl RemoveComplexOperandsPass {
                     self.declare_temporary_variable(new_expression);
                 additional_statements.push(temp_variable_statement);
 
-                return TransformExpressionResult {
+                TransformExpressionResult {
                     expression: Expression::VariableAccess {
                         name: temp_variable_name,
                     },
                     additional_statements,
-                };
+                }
             }
             Expression::Call { name, args } => {
                 let transformed_args: Vec<TransformExpressionResult> = args
@@ -167,27 +167,28 @@ impl RemoveComplexOperandsPass {
                 };
 
                 additional_statements.push(temp_variable_statement);
-                return TransformExpressionResult {
+
+                TransformExpressionResult {
                     expression: new_expression,
                     additional_statements,
-                };
+                }
             }
         }
     }
 
     fn declare_temporary_variable(
         &mut self,
-        initialzer_expression: Expression,
+        initializer_expression: Expression,
     ) -> (String, Statement) {
         let temp_variable_name = format!("tmp_{}", self.temp_variable_index).to_string();
         self.temp_variable_index += 1;
 
         let statement = Statement::VariableDeclaration {
             name: temp_variable_name.clone(),
-            value: initialzer_expression,
+            value: initializer_expression,
         };
 
-        return (temp_variable_name, statement);
+        (temp_variable_name, statement)
     }
 }
 

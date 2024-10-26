@@ -20,7 +20,7 @@ impl Token {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
-    // 1 characer tokens
+    // 1 character tokens
     ParenthesesLeft,
     ParenthesesRight,
     BraceLeft,
@@ -297,7 +297,7 @@ impl Tokenizer {
             return true;
         }
 
-        return false;
+        false
     }
 
     fn peek_next_char(&self) -> char {

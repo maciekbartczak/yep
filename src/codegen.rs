@@ -7,17 +7,17 @@ type Instruction = String;
 
 pub struct X86AssemblyCodegen {
     program: Program,
-    environment: Enviroment,
+    environment: Environment,
 }
 
 #[derive(Default)]
-struct Enviroment {
+struct Environment {
     // variable name to stack offset map
     allocated_variables: HashMap<String, u32>,
     stack_offset: u32,
 }
 
-impl Enviroment {
+impl Environment {
     fn allocate_variable(&mut self, name: String) {
         // TODO: support different size of variables
         // TODO: error handling
@@ -35,7 +35,7 @@ impl X86AssemblyCodegen {
     pub fn new(program: Program) -> Self {
         Self {
             program,
-            environment: Enviroment::default(),
+            environment: Environment::default(),
         }
     }
 
@@ -109,7 +109,7 @@ impl X86AssemblyCodegen {
     }
 
     fn emit_function_call(&mut self, name: &String, args: &Vec<Expression>) -> Vec<Instruction> {
-        assert!(args.len() == 1, "Function calls support exactly 1 argument");
+        assert_eq!(args.len(), 1, "Function calls support exactly 1 argument");
 
         let mut instructions = vec![];
 
@@ -127,7 +127,7 @@ impl X86AssemblyCodegen {
         instructions.push(format!("mov qword rdi, {}", source));
         instructions.push(format!("call {}", name));
 
-        return instructions;
+        instructions
     }
 }
 
