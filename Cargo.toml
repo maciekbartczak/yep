@@ -2,6 +2,15 @@
 name = "yep"
 version = "0.1.0"
 edition = "2021"
+default-run = "yep"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
+
+[[bin]]
+name = "yep"
+path = "src/main.rs"
+
+[[bin]]
+name = "test_runner"
+path = "tests/runner.rs"
