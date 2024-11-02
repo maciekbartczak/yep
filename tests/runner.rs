@@ -14,6 +14,14 @@ fn main() {
         }
     }
 
+    if run_build {
+        Command::new("cargo")
+            .args(["build", "--release", "--bin", "yep"])
+            .output()
+            .expect("failed to build yep");
+        println!("Build successful!");
+    }
+
     let programs = get_files_with_extension("./tests/programs", "yep");
 
     for program in programs {
@@ -29,7 +37,7 @@ fn main() {
             expected_contents.lines().map(|s| s.to_string()).collect();
 
         // compile the program
-        Command::new("target/debug/yep")
+        Command::new("target/release/yep")
             .arg(format!("{}", program))
             .output()
             .expect("failed to execute yep");
@@ -48,8 +56,8 @@ fn main() {
 
         let program_lines: Vec<String> = std_output.lines().map(String::from).collect();
 
-        print!(
-            "{}... {}\n",
+        println!(
+            "{}... {}",
             program,
             if program_lines == expected_lines {
                 "OK"
@@ -57,6 +65,7 @@ fn main() {
                 "FAIL"
             }
         );
+        assert_eq!(expected_lines, program_lines);
     }
 }
 fn get_files_with_extension(directory: &str, extension: &str) -> Vec<String> {
