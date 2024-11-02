@@ -21,7 +21,7 @@ impl Environment {
     fn allocate_variable(&mut self, name: String) {
         // TODO: support different size of variables
         // TODO: error handling
-        self.stack_offset = self.stack_offset + 8;
+        self.stack_offset = self.stack_offset + 4;
         self.allocated_variables.insert(name, self.stack_offset);
     }
 
@@ -41,6 +41,7 @@ impl X86AssemblyCodegen {
 
     pub fn generate(&mut self) -> Vec<Instruction> {
         let prelude = self.emit_prelude();
+        let stack_space_allocation = self.emit_stack_space_allocation();
         let program_instructions = self
             .program
             .statements
@@ -50,7 +51,13 @@ impl X86AssemblyCodegen {
             .collect();
         let epilogue = self.emit_epilogue();
 
-        [prelude, program_instructions, epilogue].concat()
+        [
+            prelude,
+            stack_space_allocation,
+            program_instructions,
+            epilogue,
+        ]
+        .concat()
     }
 
     fn emit_prelude(&self) -> Vec<Instruction> {
@@ -71,6 +78,26 @@ impl X86AssemblyCodegen {
             "xor rax, rax".to_string(),
             "ret".to_string(),
         ]
+    }
+
+    fn emit_stack_space_allocation(&self) -> Vec<Instruction> {
+        // this function assumes we are operating on 32-bit integers for now
+        let bytes_needed: u32 = self
+            .program
+            .statements
+            .iter()
+            .filter(|s| match s {
+                Statement::Expression(_) => false,
+                Statement::VariableDeclaration { .. } => true,
+            })
+            .map(|s| 4)
+            .sum();
+
+        if bytes_needed > 0 {
+            vec![format!("sub rsp, {}", bytes_needed).to_string()]
+        } else {
+            vec![]
+        }
     }
 
     fn emit_statement(&mut self, statement: &Statement) -> Vec<Instruction> {
@@ -96,7 +123,7 @@ impl X86AssemblyCodegen {
             _ => panic!("Tried to initialize variable using a non atomic expression"),
         };
 
-        let instruction = format!("mov qword [rbp - {}], {}", stack_offset, value);
+        let instruction = format!("mov dword [rbp - {}], {}", stack_offset, value);
 
         vec![instruction]
     }
@@ -117,14 +144,14 @@ impl X86AssemblyCodegen {
             Expression::Constant { value } => format!("{}", value),
             Expression::VariableAccess { name } => {
                 let stack_offset = self.environment.get_variable_stack_offset(name);
-                instructions.push(format!("mov qword rax, [rbp - {}]", stack_offset));
+                instructions.push(format!("mov dword rax, [rbp - {}]", stack_offset));
 
                 "rax".to_string()
             }
             _ => panic!("Tried to pass a function argument using a non atomic expression"),
         };
 
-        instructions.push(format!("mov qword rdi, {}", source));
+        instructions.push(format!("mov dword rdi, {}", source));
         instructions.push(format!("call {}", name));
 
         instructions
@@ -172,9 +199,10 @@ mod test {
                 "main:",
                 "push rbp",
                 "mov rbp, rsp",
-                "mov qword [rbp - 8], 4",
-                "mov qword [rbp - 16], 42",
-                "mov qword [rbp - 24], 127",
+                "sub rsp, 12",
+                "mov dword [rbp - 4], 4",
+                "mov dword [rbp - 8], 42",
+                "mov dword [rbp - 12], 127",
                 "mov rsp, rbp",
                 "pop rbp",
                 "xor rax, rax",
@@ -208,7 +236,7 @@ mod test {
                 "main:",
                 "push rbp",
                 "mov rbp, rsp",
-                "mov qword rdi, 4",
+                "mov dword rdi, 4",
                 "call print_int",
                 "mov rsp, rbp",
                 "pop rbp",

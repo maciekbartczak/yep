@@ -2,3 +2,4 @@ let a = 123;
 let b = 69420;
 let c = 1337;
 print_int(c);
+print_int(b);
