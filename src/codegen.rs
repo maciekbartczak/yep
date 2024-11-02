@@ -92,7 +92,6 @@ impl X86AssemblyCodegen {
             })
             .sum();
 
-
         if bytes_needed > 0 {
             // add 15 to get above the next multiple of 16
             // then clear the last 4 bits to round down to multiple of 16

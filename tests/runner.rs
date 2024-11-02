@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, Read};
+use std::io::Read;
 use std::process::Command;
 use std::{env, fs};
 
@@ -37,18 +37,15 @@ fn main() {
             expected_contents.lines().map(|s| s.to_string()).collect();
 
         // compile the program
-        Command::new("target/release/yep")
+        let yep_output = Command::new("target/release/yep")
             .arg(format!("{}", program))
             .output()
             .expect("failed to execute yep");
+        let stdout = String::from_utf8_lossy(&yep_output.stdout);
+        let stderr = String::from_utf8_lossy(&yep_output.stderr);
 
-        // TEMP: This eventually will be integrated into the yep executable
-        Command::new("bash")
-            .arg("./compile.sh")
-            .output()
-            .expect("failed to execute compile.sh");
-
-        let program_output = Command::new("./program")
+        let out_program_name = program.replace(".yep", "");
+        let program_output = Command::new(out_program_name)
             .output()
             .expect("failed to execute program");
 
