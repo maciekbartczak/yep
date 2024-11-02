@@ -92,8 +92,12 @@ impl X86AssemblyCodegen {
             })
             .sum();
 
+
         if bytes_needed > 0 {
-            vec![format!("sub rsp, {}", bytes_needed).to_string()]
+            // add 15 to get above the next multiple of 16
+            // then clear the last 4 bits to round down to multiple of 16
+            let aligned_space = (bytes_needed + 15) & !15;
+            vec![format!("sub rsp, {}", aligned_space).to_string()]
         } else {
             vec![]
         }
@@ -198,7 +202,7 @@ mod test {
                 "main:",
                 "push rbp",
                 "mov rbp, rsp",
-                "sub rsp, 12",
+                "sub rsp, 16",
                 "mov dword [rbp - 4], 4",
                 "mov dword [rbp - 8], 42",
                 "mov dword [rbp - 12], 127",
