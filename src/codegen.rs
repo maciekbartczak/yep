@@ -86,11 +86,10 @@ impl X86AssemblyCodegen {
             .program
             .statements
             .iter()
-            .filter(|s| match s {
-                Statement::Expression(_) => false,
-                Statement::VariableDeclaration { .. } => true,
+            .filter_map(|s| match s {
+                Statement::Expression(_) => None,
+                Statement::VariableDeclaration { .. } => Some(4),
             })
-            .map(|s| 4)
             .sum();
 
         if bytes_needed > 0 {
