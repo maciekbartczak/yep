@@ -39,12 +39,14 @@ fn main() {
         // compile the program
         let yep_output = Command::new("target/release/yep")
             .arg(format!("{}", program))
+            .arg("-o")
+            .arg("./tests/programs/target/program".to_string())
             .output()
             .expect("failed to execute yep");
         let stdout = String::from_utf8_lossy(&yep_output.stdout);
         let stderr = String::from_utf8_lossy(&yep_output.stderr);
 
-        let out_program_name = program.replace(".yep", "");
+        let out_program_name = "./tests/programs/target/program".to_string();
         let program_output = Command::new(out_program_name)
             .output()
             .expect("failed to execute program");

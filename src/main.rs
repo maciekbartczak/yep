@@ -1,5 +1,7 @@
 use std::fs::File;
 
+use crate::partial_evaluator::PartialEvaluator;
+use crate::remove_complex_operands::RemoveComplexOperandsPass;
 use parser::Parser;
 use std::env;
 use std::env::Args;
@@ -19,12 +21,12 @@ mod tokenizer;
 struct CompileOptions {
     source_path: PathBuf,
     output_path: PathBuf,
-    compile_runtime: bool
+    compile_runtime: bool,
 }
 
 impl From<Args> for CompileOptions {
     fn from(value: Args) -> Self {
-        let args: Vec<String> =  value.collect();
+        let args: Vec<String> = value.collect();
 
         if args.len() < 2 {
             eprintln!("Usage: yep <filename> [-o <output_filename>]");
@@ -56,7 +58,7 @@ impl From<Args> for CompileOptions {
         Self {
             source_path,
             output_path,
-            compile_runtime: true
+            compile_runtime: true,
         }
     }
 }
@@ -69,6 +71,8 @@ fn main() {
     println!("Compiling {}", compile_options.source_path.display());
     let tokens = Tokenizer::new(source).tokenize();
     let program = Parser::new(tokens).parse();
+    let program = PartialEvaluator::new(program).evaluate();
+    let program = RemoveComplexOperandsPass::new(program).run();
 
     let mut codegen = codegen::X86AssemblyCodegen::new(program);
     let instructions = codegen.generate();

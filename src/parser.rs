@@ -17,10 +17,14 @@ impl Parser {
         let mut statements = vec![];
 
         while !self.is_at_end() {
-            statements.push(self.parse_variable_declaration());
+            statements.push(self.parse_statement());
         }
 
         Program { statements }
+    }
+
+    fn parse_statement(&mut self) -> Statement {
+        self.parse_variable_declaration()
     }
 
     fn parse_variable_declaration(&mut self) -> Statement {
@@ -29,47 +33,80 @@ impl Parser {
 
             self.consume_required(TokenType::Equals);
 
-            // TODO: handle expressions
-            let number = self.consume_required(TokenType::Number);
+            let initializer = self.parse_expression();
 
             self.consume_required(TokenType::Semicolon);
 
             return Statement::VariableDeclaration {
                 name: identifier.get_literal_value().to_string(),
-                value: Expression::Constant {
-                    value: number.get_literal_value().parse::<i64>().unwrap(),
-                },
+                value: initializer,
             };
         }
 
-        self.parse_function_call()
+        Statement::Expression(self.parse_expression())
     }
 
-    fn parse_function_call(&mut self) -> Statement {
-        if let Some(function_identifier) = self.consume_if_matched(vec![TokenType::Identifier]) {
-            self.consume_required(TokenType::ParenthesesLeft);
+    fn parse_expression(&mut self) -> Expression {
+        self.parse_term()
+    }
 
+    fn parse_term(&mut self) -> Expression {
+        let mut expression = self.parse_function_call();
+
+        while let Some(_) = self.consume_if_matched(vec![TokenType::Plus, TokenType::Minus]) {
+            let operator = self.get_previous_token();
+            let rhs = self.parse_function_call();
+
+            expression = Expression::BinaryOp {
+                left: Box::new(expression),
+                operator: operator.get_type().into(),
+                right: Box::new(rhs),
+            }
+        }
+
+        expression
+    }
+
+    fn parse_function_call(&mut self) -> Expression {
+        let expression = self.parse_primary_expression();
+
+        if let Some(_) = self.consume_if_matched(vec![TokenType::ParenthesesLeft]) {
             // TODO: handle expressions
             let variable_access = self.consume_required(TokenType::Identifier);
 
             self.consume_required(TokenType::ParenthesesRight);
             self.consume_required(TokenType::Semicolon);
 
-            return Statement::Expression(Expression::Call {
-                name: function_identifier.get_literal_value().to_string(),
+            let function_name = match expression {
+                Expression::VariableAccess { name } => name,
+                _ => panic!(),
+            };
+
+            return Expression::Call {
+                name: function_name,
                 args: vec![Expression::VariableAccess {
                     name: variable_access.get_literal_value().to_string(),
                 }],
-            });
+            };
         }
 
-        self.parse_statement()
+        expression
     }
 
-    fn parse_statement(&mut self) -> Statement {
-        // TODO: This is a placeholder
-        self.cursor += 1;
-        Statement::Expression(Expression::Constant { value: 1 })
+    fn parse_primary_expression(&mut self) -> Expression {
+        if let Some(identifier) = self.consume_if_matched(vec![TokenType::Identifier]) {
+            return Expression::VariableAccess {
+                name: identifier.get_literal_value().to_string(),
+            };
+        }
+
+        if let Some(number) = self.consume_if_matched(vec![TokenType::Number]) {
+            return Expression::Constant {
+                value: number.get_literal_value().parse::<i64>().unwrap(),
+            };
+        }
+
+        panic!("Expected expression");
     }
 
     fn consume_required(&mut self, required_type: TokenType) -> Token {
@@ -101,6 +138,11 @@ impl Parser {
         }
 
         None
+    }
+
+    fn get_previous_token(&mut self) -> Token {
+        assert!(self.cursor > 0);
+        self.tokens[self.cursor - 1].clone()
     }
 
     fn is_at_end(&self) -> bool {

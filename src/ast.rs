@@ -1,3 +1,6 @@
+use crate::tokenizer::TokenType;
+use std::ptr::addr_of;
+
 pub type Program = Module;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -38,6 +41,16 @@ pub enum Expression {
 pub enum Operator {
     Sub,
     Add,
+}
+
+impl From<&TokenType> for Operator {
+    fn from(value: &TokenType) -> Self {
+        match value {
+            TokenType::Plus => Self::Add,
+            TokenType::Minus => Self::Sub,
+            _ => panic!("Unknown operator for TokenType: {}", value),
+        }
+    }
 }
 
 impl Expression {

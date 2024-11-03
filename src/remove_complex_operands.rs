@@ -1,6 +1,6 @@
 use crate::ast::{Expression, Program, Statement};
 
-struct RemoveComplexOperandsPass {
+pub struct RemoveComplexOperandsPass {
     program: Program,
     temp_variable_index: u16,
 }
@@ -48,7 +48,16 @@ impl RemoveComplexOperandsPass {
 
     fn transform_statement(&mut self, statement: Statement) -> Vec<Statement> {
         match statement {
-            Statement::Expression(_expression) => todo!(),
+            Statement::Expression(expression) => {
+                let result = self.transform_expression(expression, false);
+
+                let new_statement = Statement::Expression(result.expression);
+
+                let mut new_statements = result.additional_statements;
+                new_statements.push(new_statement);
+
+                new_statements
+            }
             Statement::VariableDeclaration {
                 name,
                 value: initializer_expression,
@@ -157,19 +166,29 @@ impl RemoveComplexOperandsPass {
                     .flat_map(|arg| arg.additional_statements)
                     .collect();
 
-                let (temp_variable_name, temp_variable_statement) = self
-                    .declare_temporary_variable(Expression::Call {
-                        name,
-                        args: new_args,
-                    });
-                let new_expression = Expression::VariableAccess {
-                    name: temp_variable_name,
+                if should_create_temporary_variable {
+                    let (temp_variable_name, temp_variable_statement) = self
+                        .declare_temporary_variable(Expression::Call {
+                            name,
+                            args: new_args,
+                        });
+                    let new_expression = Expression::VariableAccess {
+                        name: temp_variable_name,
+                    };
+
+                    additional_statements.push(temp_variable_statement);
+
+                    return TransformExpressionResult {
+                        expression: new_expression,
+                        additional_statements,
+                    };
                 };
 
-                additional_statements.push(temp_variable_statement);
-
                 TransformExpressionResult {
-                    expression: new_expression,
+                    expression: Expression::Call {
+                        name,
+                        args: new_args
+                    },
                     additional_statements,
                 }
             }
@@ -198,6 +217,34 @@ mod test {
 
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn do_not_transform_method_call_with_variable_access() {
+        // given
+        let program = Program {
+            statements: vec![
+                Statement::VariableDeclaration {
+                    name: "test".to_string(),
+                    value: Expression::Constant { value: 64 },
+                },
+                Statement::Expression(Expression::Call {
+                    name: "print_int".to_string(),
+                    args: vec![Expression::VariableAccess {
+                        name: "test".to_string(),
+                    }],
+                }),
+            ],
+        };
+        let original_program = program.clone();
+
+        let pass = RemoveComplexOperandsPass::new(program);
+
+        // when
+        let result = pass.run();
+
+        // then
+        assert_eq!(original_program, result);
+    }
 
     #[test]
     fn transform_method_call_into_variable_access() {
@@ -285,7 +332,7 @@ mod test {
     }
 
     #[test]
-    fn test() {
+    fn transform_variable_declaration_with_nested_expressions() {
         // given
         let program = Program {
             statements: vec![Statement::VariableDeclaration {

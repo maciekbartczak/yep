@@ -10,14 +10,14 @@ impl PartialEvaluator {
     }
 
     pub fn evaluate(self) -> Program {
-        return Program {
+        Program {
             statements: self
                 .program
                 .statements
                 .iter()
                 .map(|statement| self.evaluate_statement(statement.clone()))
                 .collect(),
-        };
+        }
     }
 
     fn evaluate_statement(&self, statment: Statement) -> Statement {
@@ -26,7 +26,7 @@ impl PartialEvaluator {
                 Statement::Expression(self.evaluate_expression(expression))
             }
             Statement::VariableDeclaration { name, value } => Statement::VariableDeclaration {
-                name: name,
+                name,
                 value: self.evaluate_expression(value),
             },
         }
