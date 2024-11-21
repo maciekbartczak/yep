@@ -67,6 +67,14 @@ impl PartialEvaluator {
                     },
                     _ => expression,
                 }
+            },
+            Expression::Grouping {expression } => {
+                let new_expression = self.evaluate_expression(*expression.clone());
+
+                match new_expression {
+                    Expression::Constant { value } => new_expression,
+                    _ => *expression.clone(),
+                }
             }
             _ => expression,
         }

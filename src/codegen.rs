@@ -122,7 +122,10 @@ impl X86AssemblyCodegen {
         let value = match initializer {
             Expression::Constant { value } => value,
             Expression::VariableAccess { .. } => todo!(),
-            _ => panic!("Tried to initialize variable using a non atomic expression"),
+            _ => {
+                dbg!(initializer);
+                panic!("Tried to initialize variable using a non atomic expression")
+            },
         };
 
         let instruction = format!("mov dword [rbp - {}], {}", stack_offset, value);

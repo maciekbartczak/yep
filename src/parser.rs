@@ -68,7 +68,7 @@ impl Parser {
     }
 
     fn parse_function_call(&mut self) -> Expression {
-        let expression = self.parse_primary_expression();
+        let expression = self.parse_unary_expression();
 
         if let Some(_) = self.consume_if_matched(vec![TokenType::ParenthesesLeft]) {
             // TODO: handle expressions
@@ -93,6 +93,19 @@ impl Parser {
         expression
     }
 
+    fn parse_unary_expression(&mut self) -> Expression {
+        if let Some(operator) = self.consume_if_matched(vec![TokenType::Minus]) {
+            let rhs = self.parse_unary_expression();
+
+            return Expression::UnaryOp {
+                operator: operator.get_type().into(),
+                operand: Box::new(rhs)
+            }
+        }
+
+        self.parse_primary_expression()
+    }
+
     fn parse_primary_expression(&mut self) -> Expression {
         if let Some(identifier) = self.consume_if_matched(vec![TokenType::Identifier]) {
             return Expression::VariableAccess {
@@ -106,6 +119,14 @@ impl Parser {
             };
         }
 
+        if let Some(_) = self.consume_if_matched(vec![TokenType::ParenthesesLeft]) {
+            let expression = self.parse_expression();
+            self.consume_required(TokenType::ParenthesesRight);
+
+            return Expression::Grouping { expression: Box::new(expression) }
+        }
+
+        dbg!(&self.tokens[self.cursor]);
         panic!("Expected expression");
     }
 

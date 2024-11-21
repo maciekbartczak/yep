@@ -35,6 +35,9 @@ pub enum Expression {
     VariableAccess {
         name: String,
     },
+    Grouping {
+        expression: Box<Expression>
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]

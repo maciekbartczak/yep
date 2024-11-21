@@ -192,6 +192,17 @@ impl RemoveComplexOperandsPass {
                     additional_statements,
                 }
             }
+            Expression::Grouping { expression } => {
+                dbg!(&expression);
+                let expression = self.transform_expression(*expression, true);
+
+                TransformExpressionResult {
+                    expression: Expression::Grouping {
+                        expression: Box::new(expression.expression)
+                    },
+                    additional_statements: expression.additional_statements
+                }
+            }
         }
     }
 

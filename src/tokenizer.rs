@@ -228,10 +228,11 @@ impl Tokenizer {
         // start  + 1, because token start points at the opening quote
         // cursor - 1, because cursor points at the closing quote
         let raw_value = &self.source[self.current_token_start + 1..self.cursor - 1];
+        let length = raw_value.len();
         Token {
             r#type: TokenType::String,
-            location: (self.current_line, self.current_token_start),
-            length: self.cursor - 1 - self.current_token_start,
+            location: (self.current_line, self.current_column - length),
+            length,
             literal_value: raw_value.to_string(),
         }
     }
@@ -252,7 +253,7 @@ impl Tokenizer {
 
         Token {
             r#type: TokenType::Number,
-            location: (self.current_line, self.current_token_start),
+            location: (self.current_line, self.current_column - length),
             length,
             literal_value: raw_value.to_string(),
         }
@@ -285,7 +286,7 @@ impl Tokenizer {
 
         Token {
             r#type: token_type,
-            location: (self.current_line, self.current_token_start),
+            location: (self.current_line, self.current_column - length),
             length,
             literal_value: raw_value.to_string(),
         }
@@ -322,7 +323,7 @@ impl Tokenizer {
 
         Token {
             r#type: token_type,
-            location: (self.current_line, self.current_token_start),
+            location: (self.current_line, self.current_column - length),
             length,
             literal_value,
         }
