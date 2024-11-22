@@ -7,7 +7,7 @@ use std::env;
 use std::env::Args;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use tokenizer::Tokenizer;
 
@@ -114,6 +114,6 @@ fn main() {
         .output()
         .expect("failed to compile");
 
-    let stdout = String::from_utf8_lossy(&gcc_output.stdout);
-    let stderr = String::from_utf8_lossy(&gcc_output.stderr);
+    let _stdout = String::from_utf8_lossy(&gcc_output.stdout);
+    let _stderr = String::from_utf8_lossy(&gcc_output.stderr);
 }

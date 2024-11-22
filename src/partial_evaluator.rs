@@ -41,6 +41,7 @@ impl PartialEvaluator {
                     Expression::Constant { value } => match operator {
                         Operator::Sub => Expression::Constant { value: -value },
                         Operator::Add => todo!(),
+                        _ => panic!("Cannot apply operator {:?} to an operand in UnaryOp", operator),
                     },
                     _ => expression,
                 }
@@ -64,6 +65,12 @@ impl PartialEvaluator {
                         Operator::Add => Expression::Constant {
                             value: left_value + right_value,
                         },
+                        Operator::Multiply => Expression::Constant {
+                           value: left_value * right_value,
+                        },
+                        Operator::Divide => Expression::Constant {
+                            value: left_value / right_value,
+                        }
                     },
                     _ => expression,
                 }
@@ -72,7 +79,7 @@ impl PartialEvaluator {
                 let new_expression = self.evaluate_expression(*expression.clone());
 
                 match new_expression {
-                    Expression::Constant { value } => new_expression,
+                    Expression::Constant { .. } => new_expression,
                     _ => *expression.clone(),
                 }
             }

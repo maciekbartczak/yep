@@ -51,9 +51,26 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Expression {
-        let mut expression = self.parse_function_call();
+        let mut expression = self.parse_factor();
 
         while let Some(_) = self.consume_if_matched(vec![TokenType::Plus, TokenType::Minus]) {
+            let operator = self.get_previous_token();
+            let rhs = self.parse_factor();
+
+            expression = Expression::BinaryOp {
+                left: Box::new(expression),
+                operator: operator.get_type().into(),
+                right: Box::new(rhs),
+            }
+        }
+
+        expression
+    }
+
+    fn parse_factor(&mut self) -> Expression {
+        let mut expression = self.parse_function_call();
+
+        while let Some(_) = self.consume_if_matched(vec![TokenType::Star, TokenType::Slash]) {
             let operator = self.get_previous_token();
             let rhs = self.parse_function_call();
 
@@ -68,7 +85,7 @@ impl Parser {
     }
 
     fn parse_function_call(&mut self) -> Expression {
-        let expression = self.parse_unary_expression();
+        let expression = self.parse_unary();
 
         if let Some(_) = self.consume_if_matched(vec![TokenType::ParenthesesLeft]) {
             // TODO: handle expressions
@@ -93,9 +110,9 @@ impl Parser {
         expression
     }
 
-    fn parse_unary_expression(&mut self) -> Expression {
+    fn parse_unary(&mut self) -> Expression {
         if let Some(operator) = self.consume_if_matched(vec![TokenType::Minus]) {
-            let rhs = self.parse_unary_expression();
+            let rhs = self.parse_unary();
 
             return Expression::UnaryOp {
                 operator: operator.get_type().into(),
@@ -103,10 +120,10 @@ impl Parser {
             }
         }
 
-        self.parse_primary_expression()
+        self.parse_primary()
     }
 
-    fn parse_primary_expression(&mut self) -> Expression {
+    fn parse_primary(&mut self) -> Expression {
         if let Some(identifier) = self.consume_if_matched(vec![TokenType::Identifier]) {
             return Expression::VariableAccess {
                 name: identifier.get_literal_value().to_string(),

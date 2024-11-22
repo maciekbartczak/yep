@@ -43,8 +43,8 @@ fn main() {
             .arg("./tests/programs/target/program".to_string())
             .output()
             .expect("failed to execute yep");
-        let stdout = String::from_utf8_lossy(&yep_output.stdout);
-        let stderr = String::from_utf8_lossy(&yep_output.stderr);
+        let _stdout = String::from_utf8_lossy(&yep_output.stdout);
+        let _stderr = String::from_utf8_lossy(&yep_output.stderr);
 
         let out_program_name = "./tests/programs/target/program".to_string();
         let program_output = Command::new(out_program_name)

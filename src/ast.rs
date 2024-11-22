@@ -1,5 +1,4 @@
 use crate::tokenizer::TokenType;
-use std::ptr::addr_of;
 
 pub type Program = Module;
 
@@ -44,6 +43,8 @@ pub enum Expression {
 pub enum Operator {
     Sub,
     Add,
+    Multiply,
+    Divide
 }
 
 impl From<&TokenType> for Operator {
@@ -51,17 +52,9 @@ impl From<&TokenType> for Operator {
         match value {
             TokenType::Plus => Self::Add,
             TokenType::Minus => Self::Sub,
+            TokenType::Star => Self::Multiply,
+            TokenType::Slash => Self::Divide,
             _ => panic!("Unknown operator for TokenType: {}", value),
-        }
-    }
-}
-
-impl Expression {
-    pub fn is_leaf(&self) -> bool {
-        match self {
-            Expression::Constant { .. } => true,
-            Expression::Call { .. } => true,
-            _ => false,
         }
     }
 }
